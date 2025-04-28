@@ -64,18 +64,36 @@ def clean_phone(phone):
 #--------------FINANCIAL DATAFRAME HANDLING-------------------------------------------
 
 def clean_numeric_value(value):
-    '''Cleans up the numeric value for analysis.'''
+    '''Cleans numeric value correctly handling real numbers and parentheses-wrapped strings.'''
     if pd.isna(value):
         return pd.NA
-    
-    value = str(value)
-    value = re.sub(r'\([^\d.]+\)', '', value)
-    value = re.sub(r'[^0-9().]', '', value)
 
-    if '(' in value and ')' in value:
-        value = '-' + value.replace('(', '').replace(')', '')
+    if isinstance(value, (int, float)):
+        return float(value)
 
-    return float(value)
+    value = str(value).strip()
+
+    # Check if the value is wrapped in parentheses
+    is_negative = False
+    if value.startswith('(') and value.endswith(')'):
+        is_negative = True
+        value = value[1:-1]  # Strip parentheses
+
+    # Remove anything non-numeric except .
+    value = re.sub(r'[^\d\.]', '', value)
+
+    if not value:  # Empty after cleaning
+        return pd.NA
+
+    try:
+        numeric_value = float(value)
+        if is_negative:
+            numeric_value = -numeric_value
+        return numeric_value
+    except Exception as e:
+        print(f"Error cleaning value {value}: {e}")
+        return pd.NA
+
 
 def extract_text_content(value):
     '''Remove text content in fields.'''
